@@ -15,6 +15,32 @@
 
 os.loadAPI("flex.lua")
 os.loadAPI("dig.lua")
+
+local base_file = "base.cfg"
+local BASE_POS = nil
+
+local function loadBaseCoords()
+    if not fs.exists(base_file) then
+        flex.send("base.cfg not found. Use 'quarry setbase' to define it.", colors.red)
+        return nil
+    end
+
+    local file = fs.open(base_file, "r")
+    local x = tonumber(file.readLine())
+    local y = tonumber(file.readLine())
+    local z = tonumber(file.readLine())
+    file.close()
+
+    if x and y and z then
+        return { x = x, y = y, z = z }
+    else
+        flex.send("base.cfg is malformed. It must contain 3 numbers (X, Y, Z) on separate lines.", colors.red)
+        return nil
+    end
+end
+
+BASE_POS = loadBaseCoords()
+
 local log_file = "log.txt" -- Added log_file variable
 local options_file = "flex_options.cfg" -- Added options_file variable
 local modem_channel = 6464 -- Added modem_channel variable
@@ -63,6 +89,25 @@ if #args == 0 then
    colors.lightBlue)
  return
 end --if
+-- === Special Command: Set Base ===
+if args[1] == "setbase" then
+    local x, y, z = gps.locate(3)
+    if not x or not y or not z then
+        flex.send("Error: GPS signal not available. Ensure at least 3 GPS towers are in range.", colors.red)
+        return
+    end
+
+    local base_file = "base.cfg"
+    local file = fs.open(base_file, "w")
+    file.writeLine(tostring(math.floor(x + 0.5)))
+    file.writeLine(tostring(math.floor(y + 0.5)))
+    file.writeLine(tostring(math.floor(z + 0.5)))
+    file.close()
+
+    flex.send("Base location saved to base.cfg:", colors.green)
+    flex.printColors("  X="..tostring(x)..", Y="..tostring(y)..", Z="..tostring(z), colors.yellow)
+    return
+end
 
 
 local reloaded = false
@@ -136,39 +181,66 @@ end --if
 -- ||   \__||| \| \_| || [__] \_/ || \|\\__/ --
 ----------------------------------------------
 
-local location
-local function gotoBase()
+
+
+--[[local location
+local function gotoPositionBase()
  local x = dig.getxlast()
  location = dig.location()
  -- skip is used here
  if dig.gety() < -skip then dig.up() end
- dig.gotox(0)
- dig.gotoz(0)
- dig.gotor(180)
- dig.gotoy(0)
- dig.gotox(0)
+ dig.gotoPositionx(0)
+ dig.gotoPositionz(0)
+ dig.gotoPositionr(180)
+ dig.gotoPositiony(0)
+ dig.gotoPositionx(0)
  dig.setxlast(x)
- dig.gotoz(0)
- dig.gotor(180)
+ dig.gotoPositionz(0)
+ dig.gotoPositionr(180)
  return location
-end --function
+end function]] --
+
+local function gotoPositionBase()
+    local currentLoc = dig.location()
+    if not BASE_POS then
+        flex.send("Base position not loaded.", colors.red)
+        return currentLoc
+    end
+
+    -- Step order: up/down first, then x/z
+    local currX, currY, currZ = dig.getx(), dig.gety(), dig.getz()
+    local baseX, baseY, baseZ = BASE_POS.x, BASE_POS.y, BASE_POS.z
+
+    if currY < baseY then
+        dig.up(baseY - currY)
+    elseif currY > baseY then
+        dig.down(currY - baseY)
+    end
+
+    dig.gotoPositionx(baseX)
+    dig.gotoPositionz(baseZ)
+    dig.gotoPositionr(180)
+
+    return currentLoc
+end
+
 
 local function returnFromBase(loc)
  local loc = loc or location
  local x = dig.getxlast()
- dig.gotor(0)
+ dig.gotoPositionr(0)
  checkFuel()
  -- skip is used here
- dig.gotoy(math.min(loc[2]+1,-skip))
+ dig.gotoPositiony(math.min(loc[2]+1,-skip))
  checkFuel()
- dig.gotoz(loc[3])
+ dig.gotoPositionz(loc[3])
  checkFuel()
- dig.gotox(loc[1])
+ dig.gotoPositionx(loc[1])
  dig.setxlast(x) -- Important for restoring
  checkFuel()
- dig.gotor(loc[4])
+ dig.gotoPositionr(loc[4])
  checkFuel()
- dig.gotoy(loc[2])
+ dig.gotoPositiony(loc[2])
 end --function
 
 
@@ -201,7 +273,7 @@ local function checkHalt()
  end --while
 
  flex.send("Returning to base", colors.yellow)
- loc = gotoBase()
+ loc = gotoPositionBase()
  print(" ")
  flex.printColors("Press ENTER to resume mining",
    colors.pink)
@@ -227,7 +299,7 @@ local function checkInv()
   end --if
 
   if turtle.getItemCount(14) > 0 then
-   local loc = gotoBase()
+   local loc = gotoPositionBase()
    dig.dropNotFuel()
    returnFromBase(loc)
   end --if
@@ -254,7 +326,7 @@ function checkFuel()
  -- Only check if estimated_fuel_needed is a valid number (it should be if math is correct)
  if type(estimated_fuel_needed) == 'number' and estimated_fuel_needed > 0 and a < estimated_fuel_needed * 1.2 then -- Check if current fuel is less than 120% of estimated needed
      flex.send("Fuel low (Estimated needed for remaining: "..tostring(math.ceil(estimated_fuel_needed)).."), returning to surface", colors.yellow)
-     local loc = gotoBase() -- gotoBase calls movement, which calls addBlocksProcessed
+     local loc = gotoPositionBase() -- gotoPositionBase calls movement, which calls addBlocksProcessed
      turtle.select(1)
      if dodumps then dig.doDumpDown() end
      while turtle.suckUp() do sleep(0) end
@@ -486,11 +558,11 @@ end --function
 
 function lavax()
   if dig.getx() == 0 then
-   dig.gotor(270)
+   dig.gotoPositionr(270)
    checkNewLayer()
    dig.blockLava()
   elseif dig.getx() == xmax-1 then
-   dig.gotor(90)
+   dig.gotoPositionr(90)
    checkNewLayer()
    dig.blockLava()
   end --if/else
@@ -498,11 +570,11 @@ end --function
 
 function lavaz()
   if dig.getz() == 0 then
-   dig.gotor(180)
+   dig.gotoPositionr(180)
    checkNewLayer()
    dig.blockLava()
   elseif dig.getz() == zmax-1 then
-   dig.gotor(0)
+   dig.gotoPositionr(0)
    checkNewLayer()
    dig.blockLava()
   end --if/else
@@ -537,7 +609,7 @@ function checkLava(n)
   end --if
 
   if n ~= 0 then
-   dig.gotor(r)
+   dig.gotoPositionr(r)
    checkNewLayer()
   end --if
 
@@ -597,23 +669,23 @@ if reloaded then
  else
   -- We need to return to our last position
   flex.send("Returning to last position...", colors.yellow)
-  gotoBase()
+  gotoPositionBase()
   if dodumps then dig.doDumpDown() end
   dig.dropNotFuel()
   
   -- Return to saved mining position
-  dig.gotor(0)
+  dig.gotoPositionr(0)
   checkFuel()
   -- First go to the correct Y level
-  dig.gotoy(math.min(resume_y,-skip))
+  dig.gotoPositiony(math.min(resume_y,-skip))
   checkFuel()
   -- Then move to correct X/Z position
-  dig.gotoz(resume_z)
+  dig.gotoPositionz(resume_z)
   checkFuel()
-  dig.gotox(resume_x)
+  dig.gotoPositionx(resume_x)
   checkFuel()
   -- Finally restore the correct rotation
-  dig.gotor(resume_r)
+  dig.gotoPositionr(resume_r)
   checkFuel()
   
   -- Update state tracking variables
@@ -711,18 +783,18 @@ local function validateState()
     -- Validate position bounds
     if dig.getx() >= xmax or dig.getx() < 0 then
         flex.send("Position out of X bounds, attempting recovery...", colors.red)
-        dig.gotox(math.min(math.max(dig.getx(), 0), xmax-1))
+        dig.gotoPositionx(math.min(math.max(dig.getx(), 0), xmax-1))
     end
     if dig.getz() >= zmax or dig.getz() < 0 then
         flex.send("Position out of Z bounds, attempting recovery...", colors.red)
-        dig.gotoz(math.min(math.max(dig.getz(), 0), zmax-1))
+        dig.gotoPositionz(math.min(math.max(dig.getz(), 0), zmax-1))
     end
     
     -- Validate rotation
     local r = dig.getr() % 360
     if r ~= 0 and r ~= 90 and r ~= 180 and r ~= 270 then
         flex.send("Invalid rotation detected, correcting...", colors.red)
-        dig.gotor(math.floor(r/90) * 90)
+        dig.gotoPositionr(math.floor(r/90) * 90)
     end
     
     return true
@@ -801,7 +873,7 @@ local function validatePosition()
         
         -- First try to correct X position
         if current_x ~= target_x then
-            dig.gotox(target_x)
+            dig.gotoPositionx(target_x)
             if dig.getx() ~= target_x then
                 flex.send("Failed to correct X position!", colors.red)
                 return false
@@ -810,7 +882,7 @@ local function validatePosition()
         
         -- Then try to correct Z position
         if current_z ~= target_z then
-            dig.gotoz(target_z)
+            dig.gotoPositionz(target_z)
             if dig.getz() ~= target_z then
                 flex.send("Failed to correct Z position!", colors.red)
                 return false
@@ -819,7 +891,7 @@ local function validatePosition()
         
         -- Finally correct Y if we're too deep
         if current_y < target_y then
-            dig.gotoy(target_y)
+            dig.gotoPositiony(target_y)
             if dig.gety() ~= target_y then
                 flex.send("Failed to correct Y position!", colors.red)
                 return false
@@ -850,23 +922,23 @@ local function recoverPosition()
     
     -- First, try to return to a known good X position
     local target_x = math.min(math.max(0, current_x), xmax-1)
-    if not dig.gotox(target_x) then
+    if not dig.gotoPositionx(target_x) then
         flex.send("Failed to recover X position", colors.red)
         return false
     end
     
     -- Then correct Z position
     local target_z = math.min(math.max(0, current_z), zmax-1)
-    if not dig.gotoz(target_z) then
+    if not dig.gotoPositionz(target_z) then
         flex.send("Failed to recover Z position", colors.red)
         return false
     end
     
     -- Adjust rotation based on current position
     if zdir == 1 then
-        dig.gotor(0)
+        dig.gotoPositionr(0)
     else
-        dig.gotor(180)
+        dig.gotoPositionr(180)
     end
     
     flex.send(string.format("Recovered to position X=%d, Z=%d", dig.getx(), dig.getz()), colors.green)
@@ -884,9 +956,9 @@ while not done and not dig.isStuck() do
         
         -- Set rotation based on current Z direction
         if zdir == 1 then 
-            dig.gotor(0)
+            dig.gotoPositionr(0)
         elseif zdir == -1 then 
-            dig.gotor(180)
+            dig.gotoPositionr(180)
         end
         
         saveCurrentState()
@@ -943,7 +1015,7 @@ while not done and not dig.isStuck() do
         local target_x = current_x + xdir
         -- Validate target position before moving
         if target_x >= 0 and target_x < xmax then  -- Changed condition to use < xmax
-            dig.gotox(target_x)
+            dig.gotoPositionx(target_x)
         else
             flex.send("X position would be out of bounds, starting new layer", colors.yellow)
             newlayer = true
@@ -982,14 +1054,14 @@ end
 flex.send("Digging completed, returning to surface",
   colors.yellow)
 sendStatus() -- Send final status update
-gotoBase()
+gotoPositionBase()
 
 flex.send("Descended "..tostring(-(dig.getymin() or 0)).. -- Handle nil for dig.getymin
     "m total",colors.green)
 flex.send("Dug "..tostring(dig.getdug() or 0).. -- Handle nil for dig.getdug
     " blocks total",colors.lightBlue)
 
--- Final status send upon completion (redundant if called before gotoBase, but harmless)
+-- Final status send upon completion (redundant if called before gotoPositionBase, but harmless)
 -- sendStatus()
 
 
@@ -1003,12 +1075,12 @@ end --for
 turtle.select(1)
 
 if dodumps then
- dig.gotor(0)
+ dig.gotoPositionr(0)
  dig.doDump()
- dig.gotor(180)
+ dig.gotoPositionr(180)
 end
 dig.dropNotFuel()
-dig.gotor(0)
+dig.gotoPositionr(0)
 
 dig.clearSave()
 flex.modemOff() -- Keep this to close the modem even if not used for remote control

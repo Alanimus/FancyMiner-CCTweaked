@@ -825,13 +825,13 @@ function back(n)
       addBlocksProcessed(1) -- Count successful move as processed
   else
     turn = true
-    gotor(rdist+180)
+    gotoPositionr(rdist+180)
     if not fwd() then return false end
   end --if/else
   -- Removed addBlocksProcessed(1) here, handled above in the successful move check
   end --for
 
-  if turn then gotor(rdist-180) end
+  if turn then gotoPositionr(rdist-180) end
   return true
 end --function
 
@@ -1004,7 +1004,7 @@ end --function
 ----------------------------
 
 
-function gotor(r)
+function gotoPositionr(r)
   if r == nil then
   error("Number expected, got nil", 2)
   return
@@ -1030,7 +1030,7 @@ end --function
 
 
 
-function gotoy(y)
+function gotoPositiony(y)
   if y == nil then
     error("Number expected, got nil", 2)
     return
@@ -1051,7 +1051,7 @@ function gotoy(y)
 end
 
 
-function gotox(x)
+function gotoPositionx(x)
   if x == nil then
   error("Number expected, got nil", 2)
   return
@@ -1059,14 +1059,14 @@ function gotox(x)
 
   if xdist < x then
   if rdist%360 == 270 then -- Facing West, need to go East
-    gotor(90) -- Turn East
+    gotoPositionr(90) -- Turn East
     -- Assume each step forward processes 1 block worth of movement in that direction
     while xdist < x do -- Move East until x is reached
         if not fwd() then return false end
     end
     return true
   else -- Not facing West, need to go East
-    gotor(90) -- Turn East
+    gotoPositionr(90) -- Turn East
     -- Assume each step forward processes 1 block worth of movement in that direction
     while xdist < x do -- Move East until x is reached
         if not fwd() then return false end
@@ -1077,14 +1077,14 @@ function gotox(x)
 
   if xdist > x then
   if rdist%360 == 90 then -- Facing East, need to go West
-    gotor(270) -- Turn West
+    gotoPositionr(270) -- Turn West
     -- Assume each step forward processes 1 block worth of movement in that direction
     while xdist > x do -- Move West until x is reached
         if not fwd() then return false end
     end
     return true
   else -- Not facing East, need to go West
-    gotor(270) -- Turn West
+    gotoPositionr(270) -- Turn West
     -- Assume each step forward processes 1 block worth of movement in that direction
     while xdist > x do -- Move West until x is reached
         if not fwd() then return false end
@@ -1097,7 +1097,7 @@ function gotox(x)
 end
 
 
-function gotoz(z)
+function gotoPositionz(z)
   if z == nil then
   error("Number expected, got nil", 2)
   return
@@ -1105,14 +1105,14 @@ function gotoz(z)
 
   if zdist < z then
   if rdist%360 == 180 then -- Facing South, need to go North
-    gotor(0) -- Turn North
+    gotoPositionr(0) -- Turn North
     -- Assume each step forward processes 1 block worth of movement in that direction
     while zdist < z do -- Move North until z is reached
         if not fwd() then return false end
     end
     return true
   else -- Not facing South, need to go North
-    gotor(0) -- Turn North
+    gotoPositionr(0) -- Turn North
     -- Assume each step forward processes 1 block worth of movement in that direction
     while zdist < z do -- Move North until z is reached
         if not fwd() then return false end
@@ -1123,14 +1123,14 @@ function gotoz(z)
 
   if zdist > z then
   if rdist%360 == 0 then -- Facing North, need to go South
-    gotor(180) -- Turn South
+    gotoPositionr(180) -- Turn South
     -- Assume each step forward processes 1 block worth of movement in that direction
     while zdist > z do -- Move South until z is reached
         if not fwd() then return false end
     end
     return true
   else -- Not facing North, need to go South
-    gotor(180) -- Turn South
+    gotoPositionr(180) -- Turn South
     -- Assume each step forward processes 1 block worth of movement in that direction
     while zdist > z do -- Move South until z is reached
         if not fwd() then return false end
@@ -1143,10 +1143,10 @@ function gotoz(z)
 end
 
 
-function goto(x,y,z,r,lm)
+function gotoPosition(x,y,z,r,lm)
   if type(x) == "table" then
   if #x < 4 then
-    error("Invalid Goto Table",2)
+    error("Invalid gotoPosition Table",2)
   end
   y = x[2]
   z = x[3]
@@ -1156,10 +1156,10 @@ function goto(x,y,z,r,lm)
   if #x >= 17 then blocks_processed_total = x[17] end -- Added
   x = x[1]
   end
-  gotox(x or 0)
-  gotoz(z or 0)
-  gotor(r or 0)
-  gotoy(y or 0)
+  gotoPositionx(x or 0)
+  gotoPositionz(z or 0)
+  gotoPositionr(r or 0)
+  gotoPositiony(y or 0)
   if lm~=nil then setlast(lm) end
 end
 

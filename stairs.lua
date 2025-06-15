@@ -411,23 +411,23 @@ function avoidBedrock()
 
  -- Get X and Z on the inner stair block
  if dig.getx() >= dx+2 then
-  dig.gotox(dx+1)
+  dig.gotoPositionx(dx+1)
 
  elseif dig.getx() <= -1 then
-  dig.gotox(0)
+  dig.gotoPositionx(0)
 
  end --if/else
 
  if dig.getz() >= dz+1 then
-  dig.gotoz(dz)
+  dig.gotoPositionz(dz)
 
  elseif dig.getz() <= -2 then
-  dig.gotoz(-1)
+  dig.gotoPositionz(-1)
 
  end --if/else
 
- dig.gotor(direction)
- dig.gotoy(dig.getymin())
+ dig.gotoPositionr(direction)
+ dig.gotoPositiony(dig.getymin())
  sendStatus(true, "Avoiding bedrock.")
 end --function
 
@@ -882,11 +882,11 @@ turtle.select(1)
 -- Add an explicit position check and correction if needed
 if dig.gety() > 0 then
     -- If we're above ground level, go back down to y=0
-    dig.gotoy(0)
+    dig.gotoPositiony(0)
 end
 
 -- Return to origin with explicit coordinates
-dig.goto(0,0,0,0)
+dig.gotoPosition(0,0,0,0)
 
 if success then
  flex.send("Stairway finished!", colors.lightBlue)

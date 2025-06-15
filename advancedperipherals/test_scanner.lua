@@ -47,9 +47,9 @@ local function testMineOre(ore)
     
     -- Try to mine the ore
     print("\nStarting movement sequence...")
-    dig.gotoy(startY + ore.y)
-    dig.gotox(startX + ore.x)
-    dig.gotoz(startZ + ore.z)
+    dig.gotoPositiony(startY + ore.y)
+    dig.gotoPositionx(startX + ore.x)
+    dig.gotoPositionz(startZ + ore.z)
     
     -- Check what block we're facing
     print("\nChecking block at destination...")
@@ -70,7 +70,7 @@ local function testMineOre(ore)
     
     -- Return to start
     print("\nReturning to start position...")
-    dig.goto(startX, startY, startZ, startR)
+    dig.gotoPosition(startX, startY, startZ, startR)
 end
 
 -- Main test sequence

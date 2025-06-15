@@ -136,7 +136,7 @@ local function refuelFromChest()
     local currentPos = {x = dig.getx(), y = dig.gety(), z = dig.getz()}
     
     -- Return to start
-    dig.goto(0, 0, 0, 0)
+    dig.gotoPosition(0, 0, 0, 0)
     
     -- Get fuel from chest above
     turtle.select(FUEL_SLOT)
@@ -151,7 +151,7 @@ local function refuelFromChest()
     turtle.refuel()
     
     -- Return to mining position
-    dig.goto(currentPos.x, currentPos.y, currentPos.z, dig.getr())
+    dig.gotoPosition(currentPos.x, currentPos.y, currentPos.z, dig.getr())
 end
 
 -- Function to deposit items in chest behind start
@@ -159,7 +159,7 @@ local function depositItems()
     local currentPos = {x = dig.getx(), y = dig.gety(), z = dig.getz()}
     
     -- Return to start
-    dig.goto(0, 0, 0, 180)  -- Face the chest
+    dig.gotoPosition(0, 0, 0, 180)  -- Face the chest
     
     -- Save the selected slot
     local selectedSlot = turtle.getSelectedSlot()
@@ -176,7 +176,7 @@ local function depositItems()
     turtle.select(selectedSlot)
     
     -- Return to mining position
-    dig.goto(currentPos.x, currentPos.y, currentPos.z, dig.getr())
+    dig.gotoPosition(currentPos.x, currentPos.y, currentPos.z, dig.getr())
 end
 
 -- Function to check if a block should be protected
@@ -337,7 +337,7 @@ local function digTunnelSection()
     local startR = dig.getr()
     
     -- Ensure we're facing forward (north = 0 degrees)
-    dig.gotor(0)
+    dig.gotoPositionr(0)
     
     -- Bottom layer
     -- Dig and fill center floor
@@ -436,7 +436,7 @@ local function digTunnelSection()
     
     -- Return to starting position
     dig.down(2)
-    dig.gotor(startR)
+    dig.gotoPositionr(startR)
     
     -- Ensure block slot is selected
     turtle.select(BLOCK_SLOT)
@@ -495,14 +495,14 @@ flex.send("Minimum ores: " .. config.min_ores, colors.lightBlue)
 flex.send("Maximum distance: " .. config.max_distance, colors.lightBlue)
 
 -- Always start facing forward (0 degrees)
-dig.gotor(0)
+dig.gotoPositionr(0)
 
 -- Create initial entry tunnel (4 blocks)
 flex.send("Creating entry tunnel...", colors.yellow)
 for i = 1, 4 do
     digTunnelSection()
     -- Move forward while maintaining orientation
-    dig.gotor(0)  -- Ensure we're facing forward
+    dig.gotoPositionr(0)  -- Ensure we're facing forward
     if dig.fwd() then
         state.distanceTraveled = state.distanceTraveled + 1
         state.position = {
@@ -530,7 +530,7 @@ while state.distanceTraveled < config.max_distance and state.oresFound < config.
     digTunnelSection()
     
     -- Move forward at ground level
-    dig.gotor(0)  -- Ensure we're facing forward
+    dig.gotoPositionr(0)  -- Ensure we're facing forward
     if dig.fwd() then
         state.distanceTraveled = state.distanceTraveled + 1
         state.position = {
@@ -557,8 +557,8 @@ flex.send("Total ores: " .. oresFound, colors.lightBlue)
 flex.send("Total blocks dug: " .. blocksDug, colors.lightBlue)
 
 -- Ensure we're facing the right way before returning
-dig.gotor(0)  -- Face the starting direction (north)
-dig.goto(0, 0, 0, 0)  -- Return to start while maintaining orientation
+dig.gotoPositionr(0)  -- Face the starting direction (north)
+dig.gotoPosition(0, 0, 0, 0)  -- Return to start while maintaining orientation
 depositItems()
 
 os.unloadAPI("dig.lua")
